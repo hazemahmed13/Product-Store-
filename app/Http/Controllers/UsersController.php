@@ -17,6 +17,23 @@ class UsersController extends Controller {
 
 	use ValidatesRequests;
 
+    public function list(Request $request) {
+        // التحقق من صلاحية المستخدم
+        if (!auth()->user()->hasPermissionTo('show_users')) {
+            abort(401); // إذا لم يكن لديه صلاحية
+        }
+    
+        // استعلام للحصول على جميع المستخدمين، مع إمكانية البحث باستخدام الكلمات المفتوحة
+        $query = User::select('*');
+        $query->when($request->keywords, 
+            fn($q) => $q->where("name", "like", "%$request->keywords%"));
+        $users = $query->get();
+    
+        // إرسال المستخدمين إلى الـ View
+        return view('users.list', compact('users'));
+    
+    }
+///////////////////////////////////////////////////////////////////////////
 	public function register(Request $request) {
         return view('users.register');
     }
@@ -44,7 +61,7 @@ class UsersController extends Controller {
 
         return redirect('/');
     }
-
+////////////////////////////////////////////////////////////////////////////////////////////
     public function login(Request $request) {
         return view('users.login');
     }
@@ -59,25 +76,27 @@ class UsersController extends Controller {
 
         return redirect('/');
     }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////
     public function doLogout(Request $request) {
     	
     	Auth::logout();
 
         return redirect('/');
     }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////
     public function profile(Request $request, User $user = null) {
 
         $user = $user??auth()->user();
         if(auth()->id()!=$user->id) {
             if(!auth()->user()->hasPermissionTo('show_users')) abort(401);
-        }
+        }// Broken access controle
 
         $permissions = [];
-        foreach($user->permissions as $permission) {
-            $permissions[] = $permission;
-        }
+        foreach($user->permissions as $permission) {                                           
+            $permissions[] = $permission;                            
+         }
+         
+         
         foreach($user->roles as $role) {
             foreach($role->permissions as $permission) {
                 $permissions[] = $permission;
@@ -86,13 +105,13 @@ class UsersController extends Controller {
 
         return view('users.profile', compact('user', 'permissions'));
     }
-
+////////////////////////////////////////////////////////////////////////////////////////////
     public function edit(Request $request, User $user = null) {
    
         $user = $user??auth()->user();
         if(auth()->id()!=$user?->id) {
             if(!auth()->user()->hasPermissionTo('edit_users')) abort(401);
-        }
+        }   // Broken access controle
     
         $roles = [];
         foreach(Role::all() as $role) {
@@ -114,18 +133,65 @@ class UsersController extends Controller {
 
         if(auth()->id()!=$user->id) {
             if(!auth()->user()->hasPermissionTo('show_users')) abort(401);
-        }
-   
+        } // Broken access controle
+
         $user->name = $request->name;
         $user->save();
 
-        if(auth()->user()->hasPermissionTo('edit_users')) {
+        if(auth()->user()->hasPermissionTo('admin_users')) {
 
-            $user->syncRoles($request->roles);
+            $user->syncRoles($request->roles);           //permission
             $user->syncPermissions($request->permissions);
 
             Artisan::call('cache:clear');
         }
+
+        //$user->syncRoles([1]);
+        //Artisan::call('cache:clear');
+
+        return redirect(route('profile', ['user'=>$user->id]));
+    }
+///////////////////////////////////////////////////////////////////////////////////
+    public function delete(Request $request, User $user) {
+
+        if(!auth()->user()->hasPermissionTo('delete_users')) abort(401);
+
+        //$user->delete();
+
+        return redirect()->route('users');
+    }
+///////////////////////////////////////////////////////////////////////////
+    public function editPassword(Request $request, User $user = null) {
+
+        $user = $user??auth()->user();
+        if(auth()->id()!=$user?->id) {
+            if(!auth()->user()->hasPermissionTo('edit_users')) abort(401);
+        }
+
+        return view('users.edit_password', compact('user'));
+    }
+
+    public function savePassword(Request $request, User $user) {
+
+        if(auth()->id()==$user?->id) {
+            
+            $this->validate($request, [
+                'password' => ['required', 'confirmed', Password::min(8)->numbers()->letters()->mixedCase()->symbols()],
+            ]);
+
+            if(!Auth::attempt(['email' => $user->email, 'password' => $request->old_password])) {
+                
+                Auth::logout();
+                return redirect('/');
+            }
+        }
+        else if(!auth()->user()->hasPermissionTo('edit_users')) {
+
+            abort(401);
+        }
+
+        $user->password = bcrypt($request->password); //Secure
+        $user->save();
 
         return redirect(route('profile', ['user'=>$user->id]));
     }
