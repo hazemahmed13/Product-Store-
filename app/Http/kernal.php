@@ -36,6 +36,6 @@ class Kernel extends HttpKernel
         'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
         'checklogin' => \App\Http\Middleware\CheckIfLoggedIn::class,  // هنا Middleware الذي تم إنشاؤه
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
-        // يمكن إضافة المزيد من الـ Middleware حسب الحاجة
+        'role.student' => \App\Http\Middleware\EnsureUserIsStudent::class,
     ];
 }

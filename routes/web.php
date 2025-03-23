@@ -5,6 +5,8 @@ use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TranscriptController;
+use App\Http\Controllers\CoursesController;
+
 
 Route::get('register', [UsersController::class, 'register'])->name('register');
 Route::post('register', [UsersController::class, 'doRegister'])->name('do_register');
@@ -51,3 +53,25 @@ Route::middleware('auth')->group(function () {
     Route::get('/students', [StudentController::class, 'index'])->name('students.index');
     Route::post('/students', [StudentController::class, 'store'])->name('students.store');
 });
+
+
+
+
+
+/////////////////////////////////////
+// عرض قائمة الدورات
+Route::get('courses', [CoursesController::class, 'list'])->name('courses_list');
+
+// عرض نموذج إضافة/تعديل دورة
+Route::get('courses/edit/{course?}', [CoursesController::class, 'edit'])->name('courses_edit');
+
+// حفظ بيانات الدورة
+Route::post('courses/save/{course?}', [CoursesController::class, 'save'])->name('courses_save');
+
+// تسجيل طالب في دورة
+Route::post('courses/enroll/{course}', [CoursesController::class, 'enrollStudent'])
+    ->name('courses_enroll_student')
+    ->middleware('auth');
+
+// حذف دورة
+Route::get('courses/delete/{course}', [CoursesController::class, 'delete'])->name('courses_delete');

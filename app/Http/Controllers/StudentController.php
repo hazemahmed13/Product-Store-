@@ -6,31 +6,28 @@ use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth; 
 
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Course;
+use App\Models\User;
+
 class StudentController extends Controller
 {
-    public function index()
+    // عرض المواد المسجل فيها الطالب
+    public function showCourses()
     {
-        $students = Student::all(); 
-        return view('students.index', compact('students'));
-    }
+        // التحقق من أن المستخدم طالب
+        if (auth()->user()->role !== 'student') {
+            abort(403, 'Unauthorized action.'); // 403 Forbidden
+        }
 
-    public function store(Request $request)
-    {
-         
-        $request->validate([
-            'name' => 'required|string|max:255', 
-            'major' => 'required|string|max:255',
-            'age' => 'required|integer|min:18',
-        ]);
+        // الحصول على الطالب الحالي
+        $student = auth()->user();
 
-        
-        $student = new Student();
-        $student->user_id = Auth::id(); 
-        $student->name = $request->name;  
-        $student->major = $request->major;
-        $student->age = $request->age;
-        $student->save(); 
+        // الحصول على المواد المسجل فيها الطالب
+        $courses = $student->enrolledCourses;
 
-        return redirect()->route('students.index'); 
+        return view('student.courses', compact('courses'));
     }
 }
