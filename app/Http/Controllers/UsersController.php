@@ -7,9 +7,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
+use Laravel\Socialite\Facades\Socialite;
 use DB;
 use Artisan;
+use Carbon\Carbon;
 
+
+use App\Mail\VerificationEmail;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 
@@ -18,22 +24,14 @@ class UsersController extends Controller {
 	use ValidatesRequests;
 
     public function list(Request $request) {
-        // التحقق من صلاحية المستخدم
-        if (!auth()->user()->hasPermissionTo('show_users')) {
-            abort(401); // إذا لم يكن لديه صلاحية
-        }
-    
-        // استعلام للحصول على جميع المستخدمين، مع إمكانية البحث باستخدام الكلمات المفتوحة
+        if(!auth()->user()->hasPermissionTo('show_users'))abort(401);
         $query = User::select('*');
         $query->when($request->keywords, 
-            fn($q) => $q->where("name", "like", "%$request->keywords%"));
+        fn($q)=> $q->where("name", "like", "%$request->keywords%"));
         $users = $query->get();
-    
-        // إرسال المستخدمين إلى الـ View
         return view('users.list', compact('users'));
-    
     }
-///////////////////////////////////////////////////////////////////////////
+
 	public function register(Request $request) {
         return view('users.register');
     }
@@ -59,9 +57,14 @@ class UsersController extends Controller {
 	    $user->password = bcrypt($request->password); //Secure
 	    $user->save();
 
+        $title = "Verification Link";
+        $token = Crypt::encryptString(json_encode(['id' => $user->id, 'email' => $user->email]));
+        $link = route("verify", ['token' => $token]);
+        Mail::to($user->email)->send(new VerificationEmail($link, $user->name));
         return redirect('/');
+
     }
-////////////////////////////////////////////////////////////////////////////////////////////
+
     public function login(Request $request) {
         return view('users.login');
     }
@@ -74,29 +77,31 @@ class UsersController extends Controller {
         $user = User::where('email', $request->email)->first();
         Auth::setUser($user);
 
+        if(!$user->email_verified_at)
+            return redirect()->back()->withInput($request->input())->withErrors('Your email is not verified.');
+
+
         return redirect('/');
     }
-//////////////////////////////////////////////////////////////////////////////////////////////////
+
     public function doLogout(Request $request) {
     	
     	Auth::logout();
 
         return redirect('/');
     }
-//////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public function profile(Request $request, User $user = null) {
 
         $user = $user??auth()->user();
         if(auth()->id()!=$user->id) {
             if(!auth()->user()->hasPermissionTo('show_users')) abort(401);
-        }// Broken access controle
+        }
 
         $permissions = [];
-        foreach($user->permissions as $permission) {                                           
-            $permissions[] = $permission;                            
-         }
-         
-         
+        foreach($user->permissions as $permission) {
+            $permissions[] = $permission;
+        }
         foreach($user->roles as $role) {
             foreach($role->permissions as $permission) {
                 $permissions[] = $permission;
@@ -105,13 +110,13 @@ class UsersController extends Controller {
 
         return view('users.profile', compact('user', 'permissions'));
     }
-////////////////////////////////////////////////////////////////////////////////////////////
+
     public function edit(Request $request, User $user = null) {
    
         $user = $user??auth()->user();
         if(auth()->id()!=$user?->id) {
             if(!auth()->user()->hasPermissionTo('edit_users')) abort(401);
-        }   // Broken access controle
+        }
     
         $roles = [];
         foreach(Role::all() as $role) {
@@ -133,14 +138,14 @@ class UsersController extends Controller {
 
         if(auth()->id()!=$user->id) {
             if(!auth()->user()->hasPermissionTo('show_users')) abort(401);
-        } // Broken access controle
+        }
 
         $user->name = $request->name;
         $user->save();
 
         if(auth()->user()->hasPermissionTo('admin_users')) {
 
-            $user->syncRoles($request->roles);           //permission
+            $user->syncRoles($request->roles);
             $user->syncPermissions($request->permissions);
 
             Artisan::call('cache:clear');
@@ -151,7 +156,7 @@ class UsersController extends Controller {
 
         return redirect(route('profile', ['user'=>$user->id]));
     }
-///////////////////////////////////////////////////////////////////////////////////
+
     public function delete(Request $request, User $user) {
 
         if(!auth()->user()->hasPermissionTo('delete_users')) abort(401);
@@ -160,7 +165,7 @@ class UsersController extends Controller {
 
         return redirect()->route('users');
     }
-///////////////////////////////////////////////////////////////////////////
+
     public function editPassword(Request $request, User $user = null) {
 
         $user = $user??auth()->user();
@@ -195,4 +200,39 @@ class UsersController extends Controller {
 
         return redirect(route('profile', ['user'=>$user->id]));
     }
+
+    public function verify(Request $request) {
+   
+        $decryptedData = json_decode(Crypt::decryptString($request->token), true);
+        $user = User::find($decryptedData['id']);
+        if(!$user) abort(401);
+        $user->email_verified_at = Carbon::now();
+        $user->save();
+
+        return view('users.verified', compact('user'));
+    }
+
+    public function redirectToGoogle()
+    {
+        return Socialite::driver('google')->redirect();
+    }
+
+    public function handleGoogleCallback() {
+        try {
+            $googleUser = Socialite::driver('google')->user();
+            $user = User::updateOrCreate([
+                'google_id' => $googleUser->id,
+            ], [
+                'name' => $googleUser->name,
+                'email' => $googleUser->email,
+                'google_token' => $googleUser->token,
+                'google_refresh_token' => $googleUser->refreshToken,
+            ]);
+            Auth::login($user);
+            return redirect('/');
+        } catch (\Exception $e) {
+            return redirect('/login')->with('error', 'Google login failed.'); // Handle errors
+        }
+    }
+
 } 
