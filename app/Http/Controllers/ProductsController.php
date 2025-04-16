@@ -73,4 +73,11 @@ class ProductsController extends Controller {
 
 		return redirect()->route('products_list');
 	}
+
+	public function purchases(Request $request) {
+		if(!auth()->user()) return redirect()->route('login');
+		
+		$purchases = auth()->user()->purchases()->with('product')->get();
+		return view('products.purchases', compact('purchases'));
+	}
 } 

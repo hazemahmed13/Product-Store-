@@ -30,16 +30,8 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-
-    // العلاقة مع المواد التي يدرسها الأستاذ
-    public function taughtCourses()
-    {
-        return $this->hasMany(Course::class, 'teacher_id');
-    }
-
-    // العلاقة مع المواد المسجل فيها الطالب
-    public function enrolledCourses()
-    {
-        return $this->belongsToMany(Course::class, 'course_user', 'user_id', 'course_id');
-    }
+    public function purchases()
+{
+    return $this->hasMany(Purchase::class);
+}
 }

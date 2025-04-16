@@ -25,6 +25,12 @@
         <button type="submit" class="btn btn-primary">Login</button>
       </div>
     </form>
+    <div class="text-center mt-3">
+      <p>Or login with:</p>
+      <a href="{{ route('login_with_google') }}" class="btn btn-danger">
+        <i class="fab fa-google"></i> Login with Google
+      </a>
+    </div>
     </div>
   </div>
 </div>

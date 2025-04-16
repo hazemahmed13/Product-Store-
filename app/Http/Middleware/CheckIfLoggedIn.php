@@ -17,9 +17,9 @@ class CheckIfLoggedIn
      */
     public function handle(Request $request, Closure $next)
     {
-        // إذا لم يكن المستخدم قد سجل دخوله
+     
         if (!Auth::check()) {
-            // إعادة توجيه المستخدم إلى صفحة تسجيل الدخول
+            
             return redirect()->route('login');
         }
 

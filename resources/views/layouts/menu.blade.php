@@ -17,14 +17,12 @@
                 <a class="nav-link" href="{{route('products_list')}}">Products</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="{{route('courses_list')}}">Courses</a>
+                <a class="nav-link" href="{{ route('purchases_list') }}">My Purchases</a>
             </li>
             <!-- تعديل الرابط هنا ليتناسب مع المسار الصحيح students.index -->
+          
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('students.index') }}">Students</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('users') }}">Users</a>
+                <a class="nav-link" href="{{ route('users') }}">Show Customers</a>
             </li>
         </ul>
         <ul class="navbar-nav">
