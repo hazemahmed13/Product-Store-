@@ -24,7 +24,8 @@ Route::get('/auth/google',
 Route::get('/auth/google/callback', 
 [UsersController::class, 'handleGoogleCallback']);
 
-
+Route::get('/auth/facebook', [UsersController::class, 'redirectToFacebook'])->name('login_with_facebook');
+Route::get('/auth/facebook/callback', [UsersController::class, 'handleFacebookCallback']);
 
 Route::get('products', [ProductsController::class, 'list'])->name('products_list');
 Route::get('products/edit/{product?}', [ProductsController::class, 'edit'])->name('products_edit');

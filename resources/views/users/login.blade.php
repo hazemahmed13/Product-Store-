@@ -27,9 +27,14 @@
     </form>
     <div class="text-center mt-3">
       <p>Or login with:</p>
-      <a href="{{ route('login_with_google') }}" class="btn btn-danger">
-        <i class="fab fa-google"></i> Login with Google
-      </a>
+      <div class="d-flex justify-content-center gap-2">
+        <a href="{{ route('login_with_google') }}" class="btn btn-danger">
+          <i class="fab fa-google"></i> Google
+        </a>
+        <a href="{{ route('login_with_facebook') }}" class="btn btn-primary">
+          <i class="fab fa-facebook"></i> Facebook
+        </a>
+      </div>
     </div>
     </div>
   </div>

@@ -34,8 +34,8 @@ class UsersController extends Controller
 
     public function list(Request $request)
     {
-        if (!auth()->user()->can('show_users')) abort(403);
-
+        $this->authorize('show_users');
+        
         $users = User::query()
             ->when($request->keywords, fn($q) => $q->where('name', 'like', "%{$request->keywords}%"))
             ->paginate(15);
@@ -57,7 +57,6 @@ class UsersController extends Controller
         ]);
 
         $user = $this->userService->createUser($validated);
-
         $this->userService->sendVerificationEmail($user);
 
         return redirect('/')->with('message', 'Please check your email to verify your account.');
@@ -75,7 +74,6 @@ class UsersController extends Controller
         }
 
         $user = Auth::user();
-
         if (!$user->email_verified_at) {
             Auth::logout();
             return back()->withInput()->withErrors('Your email is not verified.');
@@ -93,42 +91,35 @@ class UsersController extends Controller
     public function profile(User $user = null)
     {
         $user = $user ?? auth()->user();
+        $this->authorize('view', $user);
 
-        if (auth()->id() !== $user->id && !auth()->user()->can('show_users')) {
-            abort(403);
-        }
-
-        $permissions = $user->getAllPermissions();
-
-        return view('users.profile', compact('user', 'permissions'));
+        return view('users.profile', [
+            'user' => $user,
+            'permissions' => $user->getAllPermissions()
+        ]);
     }
 
     public function edit(User $user = null)
     {
         $user = $user ?? auth()->user();
+        $this->authorize('update', $user);
 
-        if (auth()->id() !== $user->id && !auth()->user()->can('edit_users')) {
-            abort(403);
-        }
+        $roles = Role::all()->map(fn($role) => [
+            'role' => $role,
+            'taken' => $user->hasRole($role->name)
+        ]);
 
-        $roles = Role::all()->map(function ($role) use ($user) {
-            $role->taken = $user->hasRole($role->name);
-            return $role;
-        });
-
-        $permissions = Permission::all()->map(function ($permission) use ($user) {
-            $permission->taken = $user->hasPermissionTo($permission->name);
-            return $permission;
-        });
+        $permissions = Permission::all()->map(fn($permission) => [
+            'permission' => $permission,
+            'taken' => $user->hasPermissionTo($permission->name)
+        ]);
 
         return view('users.edit', compact('user', 'roles', 'permissions'));
     }
 
     public function save(Request $request, User $user)
     {
-        if (auth()->id() !== $user->id && !auth()->user()->can('admin_users')) {
-            abort(403);
-        }
+        $this->authorize('update', $user);
 
         $user->update(['name' => $request->name]);
 
@@ -143,26 +134,22 @@ class UsersController extends Controller
 
     public function delete(User $user)
     {
-        if (!auth()->user()->can('delete_users')) abort(403);
-
+        $this->authorize('delete', $user);
         $user->delete();
-
         return redirect()->route('users')->with('message', 'User deleted successfully.');
     }
 
     public function editPassword(User $user = null)
     {
         $user = $user ?? auth()->user();
-
-        if (auth()->id() !== $user->id && !auth()->user()->can('edit_users')) {
-            abort(403);
-        }
-
+        $this->authorize('update', $user);
         return view('users.edit_password', compact('user'));
     }
 
     public function savePassword(Request $request, User $user)
     {
+        $this->authorize('update', $user);
+
         if (auth()->id() === $user->id) {
             $request->validate([
                 'old_password' => ['required'],
@@ -173,12 +160,9 @@ class UsersController extends Controller
                 Auth::logout();
                 return redirect('/');
             }
-        } elseif (!auth()->user()->can('edit_users')) {
-            abort(403);
         }
 
         $user->update(['password' => bcrypt($request->password)]);
-
         return redirect()->route('profile', ['user' => $user->id]);
     }
 
@@ -186,9 +170,7 @@ class UsersController extends Controller
     {
         $decrypted = json_decode(Crypt::decryptString($request->token), true);
         $user = User::findOrFail($decrypted['id']);
-
         $user->update(['email_verified_at' => Carbon::now()]);
-
         return view('users.verified', compact('user'));
     }
 
@@ -200,26 +182,56 @@ class UsersController extends Controller
     public function handleGoogleCallback()
     {
         try {
-            $googleUser = Socialite::driver('google')->stateless()->user();
+            $googleUser = Socialite::driver('google')->user();
 
             if (!$googleUser->user['verified_email']) {
                 return redirect('/login')->with('error', 'Google account email not verified.');
             }
 
-            $user = User::updateOrCreate([
-                'google_id' => $googleUser->id,
-            ], [
-                'name' => $googleUser->name,
-                'email' => $googleUser->email,
-                'google_token' => $googleUser->token,
-                'google_refresh_token' => $googleUser->refreshToken,
-            ]);
+            $user = User::updateOrCreate(
+                ['google_id' => $googleUser->id],
+                [
+                    'name' => $googleUser->name,
+                    'email' => $googleUser->email,
+                    'google_token' => $googleUser->token,
+                    'google_refresh_token' => $googleUser->refreshToken,
+                    'avatar' => $googleUser->avatar,
+                    'email_verified_at' => now()
+                ]
+            );
 
             Auth::login($user);
-
             return redirect('/');
         } catch (\Exception $e) {
             return redirect('/login')->with('error', 'Google login failed.');
+        }
+    }
+
+    public function redirectToFacebook()
+    {
+        return Socialite::driver('facebook')->redirect();
+    }
+
+    public function handleFacebookCallback()
+    {
+        try {
+            $facebookUser = Socialite::driver('facebook')->user();
+
+            $user = User::updateOrCreate(
+                ['facebook_id' => $facebookUser->id],
+                [
+                    'name' => $facebookUser->name,
+                    'email' => $facebookUser->email,
+                    'facebook_token' => $facebookUser->token,
+                    'avatar' => $facebookUser->avatar,
+                    'email_verified_at' => now()
+                ]
+            );
+
+            Auth::login($user);
+            return redirect('/');
+        } catch (\Exception $e) {
+            return redirect('/login')->with('error', 'Facebook login failed.');
         }
     }
 }

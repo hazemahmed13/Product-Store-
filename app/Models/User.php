@@ -16,11 +16,20 @@ class User extends Authenticatable
         'email',
         'password',
         'role', // إضافة حقل role
+        'google_id',
+        'google_token',
+        'google_refresh_token',
+        'facebook_id',
+        'facebook_token',
+        'avatar'
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'google_token',
+        'google_refresh_token',
+        'facebook_token'
     ];
 
     protected function casts(): array
