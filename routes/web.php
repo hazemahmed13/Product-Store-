@@ -36,6 +36,15 @@ Route::get('sqli', function (Request $request) {
     DB::unprepared(("DROP TABLE $table"));
     return redirect('/');
 });
+Route::get('collect', function (Request $request) {
+    $name=$request->query('name');
+    $credit=$request->query('credit');
+
+    return response('data collected',200)
+    ->header('Access-control-Allow-Origin', '*')
+    ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    ->header('Access-Control-Allow-Headers', 'Content-type, X-Requested--With');
+});
 
 
 Route::get('/', function () {

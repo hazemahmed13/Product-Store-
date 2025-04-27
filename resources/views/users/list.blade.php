@@ -20,6 +20,7 @@
     </div>
 </form>
 {{-- xss injection --}}
+
 @if(!empty(request()->keywords))
  <div class="card mt-2">
      <div class="card-body">
@@ -27,7 +28,12 @@
       </div>
  </div>
 @endif 
-
+<div class="card my-2">
+  <div class="card-body">
+      Dear <span id='name'>{{ auth()->user()->name }}</span>, your credit is <span 
+id='credit'>{{ auth()->user()->credit }}</span>
+  </div>
+</div>
 <div class="card mt-2">
   <div class="card-body">
     <table class="table">
