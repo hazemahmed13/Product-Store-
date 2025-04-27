@@ -15,7 +15,6 @@ class ProductsController extends Controller {
 	public function __construct()
     {
         $this->middleware('auth:web')->except('list');
-        /*123*/
     }
 
 	public function list(Request $request) {
@@ -73,11 +72,34 @@ class ProductsController extends Controller {
 
 		return redirect()->route('products_list');
 	}
-
-	public function purchases(Request $request) {
-		if(!auth()->user()) return redirect()->route('login');
+	public function purchase(Request $request, Product $product) {
 		
-		$purchases = auth()->user()->purchases()->with('product')->get();
-		return view('products.purchases', compact('purchases'));
+		if (!auth()->user()) {
+			return redirect('/');
+		}
+	
+		
+		$user = auth()->user();
+		if ($user->credit < $product->price) {
+			return redirect()->back()->withErrors(['error' => 'رصيدك غير كافٍ لشراء هذا المنتج.']);
+		}
+	
+		
+		if ($product->stock <= 0) {
+			return redirect()->back()->withErrors(['error' => 'المنتج غير متوفر في المخزون.']);
+		}
+	
+		
+		$user->credit -= $product->price;
+		$user->save();
+	
+		
+		$product->stock -= 1;
+		$product->save();
+	
+		
+	
+		return redirect()->route('products_list')->with('success', 'تم شراء المنتج بنجاح!');
 	}
 } 
+
