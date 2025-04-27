@@ -19,6 +19,14 @@
         </div>
     </div>
 </form>
+{{-- xss injection --}}
+@if(!empty(request()->keywords))
+ <div class="card mt-2">
+     <div class="card-body">
+        View search result of <span>{{!!request()->keywords!!}}</span>
+      </div>
+ </div>
+@endif 
 
 <div class="card mt-2">
   <div class="card-body">

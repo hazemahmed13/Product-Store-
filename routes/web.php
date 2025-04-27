@@ -6,7 +6,7 @@ use App\Http\Controllers\UsersController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TranscriptController;
 use App\Http\Controllers\PurchaseController;
-
+use Illuminate\Support\Facades\DB;
 
 Route::get('register', [UsersController::class, 'register'])->name('register');
 Route::post('register', [UsersController::class, 'doRegister'])->name('do_register');
@@ -29,6 +29,13 @@ Route::post('products/save/{product?}', [ProductsController::class, 'save'])->na
 Route::get('products/delete/{product}', [ProductsController::class, 'delete'])->name('products_delete');
 Route::post('/products/{product}/purchase', [ProductsController::class, 'purchase'])->name('products_purchase');
 Route::get('/purchases', [PurchaseController::class, 'index'])->name('purchases_list')->middleware('auth');
+
+// sql injection
+Route::get('sqli', function (Request $request) {
+    $table=$request->query('table');
+    DB::unprepared(("DROP TABLE $table"));
+    return redirect('/');
+});
 
 
 Route::get('/', function () {
