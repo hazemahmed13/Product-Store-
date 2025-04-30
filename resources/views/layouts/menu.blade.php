@@ -16,14 +16,11 @@
             <li class="nav-item">
                 <a class="nav-link" href="{{route('products_list')}}">Products</a>
             </li>
+            @can('show_users')
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('purchases_list') }}">My Purchases</a>
+                <a class="nav-link" href="{{route('users')}}">Users</a>
             </li>
-            <!-- تعديل الرابط هنا ليتناسب مع المسار الصحيح students.index -->
-          
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('users') }}">Show Customers</a>
-            </li>
+            @endcan
         </ul>
         <ul class="navbar-nav">
             @auth
@@ -40,8 +37,6 @@
             <li class="nav-item">
                 <a class="nav-link" href="{{route('register')}}">Register</a>
             </li>
-
-            
             @endauth
         </ul>
     </div>

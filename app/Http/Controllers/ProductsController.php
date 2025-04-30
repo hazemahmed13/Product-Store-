@@ -14,7 +14,8 @@ class ProductsController extends Controller {
 
 	public function __construct()
     {
-        $this->middleware('auth:web')->except('list');
+       //broken access control
+		// $this->middleware('auth:web')->except('list');
     }
 
 	public function list(Request $request) {
@@ -39,8 +40,8 @@ class ProductsController extends Controller {
 	}
 
 	public function edit(Request $request, Product $product = null) {
-
-		if(!auth()->user()) return redirect('/');
+//broken access control
+		//if(!auth()->user()) return redirect('/');
 
 		$product = $product??new Product();
 

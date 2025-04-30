@@ -20,8 +20,14 @@ Route::post('users/save/{user}', [UsersController::class, 'save'])->name('users_
 Route::get('users/delete/{user}', [UsersController::class, 'delete'])->name('users_delete');
 Route::get('users/edit_password/{user?}', [UsersController::class, 'editPassword'])->name('edit_password');
 Route::post('users/save_password/{user}', [UsersController::class, 'savePassword'])->name('save_password');
+Route::get('verify', [UsersController::class, 'verify'])->name('verify');
+Route::get('/auth/google', 
+[UsersController::class, 'redirectToGoogle'])
+->name('login_with_google');
 
-Route::get('users', [UsersController::class, 'list'])->name('users');
+Route::get('/auth/google/callback', 
+[UsersController::class, 'handleGoogleCallback']);
+
 
 Route::get('products', [ProductsController::class, 'list'])->name('products_list');
 Route::get('products/edit/{product?}', [ProductsController::class, 'edit'])->name('products_edit');
@@ -36,6 +42,8 @@ Route::get('sqli', function (Request $request) {
     DB::unprepared(("DROP TABLE $table"));
     return redirect('/');
 });
+
+//x
 Route::get('collect', function (Request $request) {
     $name=$request->query('name');
     $credit=$request->query('credit');
@@ -45,8 +53,8 @@ Route::get('collect', function (Request $request) {
     ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
     ->header('Access-Control-Allow-Headers', 'Content-type, X-Requested--With');
 });
-
-
+// ................
+//sqli?table=users
 Route::get('/', function () {
     return view('welcome');
 });
