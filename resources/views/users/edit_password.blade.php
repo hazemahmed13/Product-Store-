@@ -1,41 +1,59 @@
-@extends('layouts.master')
-@section('title', 'Edit User')
+@extends('layouts.app')
 @section('content')
-<div class="d-flex justify-content-center">
-    <div class="row m-4 col-sm-8">
-        <form action="{{route('save_password', $user->id)}}" method="post">
-            {{ csrf_field() }}
-            @foreach($errors->all() as $error)
-            <div class="alert alert-danger">
-            <strong>Error!</strong> {{$error}}
-            </div>
-            @endforeach
-
-            @if(!auth()->user()->hasPermissionTo('admin_users') || auth()->id()==$user->id)
-                <div class="row mb-2">
-                    <div class="col-12">
-                        <label class="form-label">Old Password:</label>
-                        <input type="password" class="form-control" placeholder="Old Password" name="old_password" required>
-                    </div>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">Change Password</h2>
                 </div>
-            @endcan
+                <div class="card-body">
+                    <form action="{{ route('save_password', $user->id) }}" method="POST">
+                        @csrf
+                        @if($errors->any())
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    @foreach($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
 
-            <div class="row mb-2">
-                <div class="col-12">
-                    <label class="form-label">Password:</label>
-                    <input type="password" class="form-control" placeholder="Password" name="password" required>
+                        @if(auth()->id() == $user->id)
+                            <div class="mb-3">
+                                <label for="old_password" class="form-label">Current Password</label>
+                                <input type="password" class="form-control @error('old_password') is-invalid @enderror" 
+                                       id="old_password" name="old_password" required>
+                                @error('old_password')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        @endif
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">New Password</label>
+                            <input type="password" class="form-control @error('password') is-invalid @enderror" 
+                                   id="password" name="password" required>
+                            @error('password')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password_confirmation" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control @error('password_confirmation') is-invalid @enderror" 
+                                   id="password_confirmation" name="password_confirmation" required>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ route('users.profile', $user->id) }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Change Password</button>
+                        </div>
+                    </form>
                 </div>
             </div>
-            
-            <div class="row mb-2">
-                <div class="col-12">
-                    <label class="form-label">Password Confirmtion:</label>
-                    <input type="password" class="form-control" placeholder="Password Confirmtion" name="password_confirmation" required>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
+        </div>
     </div>
 </div>
 @endsection
